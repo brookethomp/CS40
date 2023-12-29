@@ -1,0 +1,75 @@
+README
+
+Names:
+    
+    Brooke Thompson (bthomp05)
+    Richard Geoghegan (rgeogh01)
+
+Architecture:
+
+    Uses a 2D array to hold values from a ppm. 40image.c will call a fucntion 
+    in compress40 to compress or decompress the image depending on the user 
+    input. Then the image will be read using read_print.c and trimmed to 
+    have even height and width. 
+    
+    To compress an image, in rgb_cv_conversion.c the function will read in the 
+    RGB values of a pixel into a struct at each index of a 2D array. Then each 
+    RGB value will be converted into component-video representations and put 
+    back into a 2D array of structs. In pack_unpack.c, those component-video 
+    values will be converted into segments of bits that represent parts of a 
+    word. These parts of a word will then be bitpacked into a 64 bit word 
+    using functions from bitpack.c. Each 64 bit words will then be stored in a 
+    2D array and printed back out as a compressed image using read_print.c. 
+
+    To decompress an image, using pack_unpack.c the 64 bit word is unpacked 
+    into separate segments of bits stored at index of a 2D array in a struct 
+    using function from bitpack.c. In pack_unpack.c, the segments of bits are 
+    then converted into component-video values. The coponent-video values are 
+    changhed back into red, blue and green values in rgb_cv_conversion. and 
+    stored in a converted 2D array of structs. The decompressed file is then 
+    printed out as a ppm using Pnm_ppmwrite in compress40.c.
+
+    Then the program will EXIT_SUCCESS in 40image.c and the user can use the 
+    ppmdiff.c to see how different the original file vs the compressed and 
+    decompressed files are.
+    
+Acknowledgements:
+    
+    TAs- Tim
+
+    Stack Overflow
+    Used other people’s questions and answers to help apply them to our own 
+    questions and solve similar problems in our code.
+
+    Given bin files
+    Used cat on given files to help understand functions
+    we are given and can use.
+
+Implemented Successfully:
+
+    We believe that all of files, programs, and functions are implemented 
+    correctly and should function as expected.
+
+Hours Spent Analyzing the problem: 
+    
+    15
+
+Hours Spent solving the problem after: 
+    
+    10
+
+Descriptions of the image-compression and bit-packing problems:
+
+        Image-compression:
+            Our image compression uses a 2D array of structs to hold values 
+            that are then converted into component-video values and restoreed 
+            using an apply function at each index. The cv values are changed 
+            into segments of bits at each index using an apply function. 
+            The segments of bits are bitpacked and then stored into a 2D array. 
+
+        bit-packing problem:
+            The bitpacking functions take in a segment of bits and their width 
+            and then will know how many to shift over given the lsb and width 
+            of the new segment of bits.
+
+        
