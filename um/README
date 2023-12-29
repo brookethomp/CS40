@@ -1,0 +1,190 @@
+README for CS40 HW6: UM
+
+Georgia Power (gpower02) and Brooke Thompson (bthomp05)
+
+
+TA help: Bill, Dan, Dhanvi, Ayda, Julia, Trevor, Tim
+
+Everything has been correctly implemented to our knowledge
+
+Departures from design: Functionality for segment load and segment store 
+                    were moved to ummem.c since they access the UM's mapped 
+                    memory. This kept us from having to include the UM memory 
+                    struct in the umarithmetic.c file. We also moved 
+                    functionality for load_program into um.c since it needs 
+                    access to the program counter. This kept us from having 
+                    to include the UM strut in ummem.c. We also implemented 
+                    our program counter as a counter instead of a pointer. 
+
+Architecture: 
+    Modules: um, ummem, umarithmetic
+    -   um is the driver for the um program and defines a struct 
+        Universal_Machine. The Universal_Machine struct is only known to the um
+        module. When the UM's registers need to be accessed by other modules, 
+        the array of registers is passed to their functions. The um module 
+        implements load_program and advances program counter the execution of 
+        each UM instruction. 
+    -   ummem defines the UM_memory_structures struct that serves as the UM's 
+        memory. This struct is instantiated in the UM driver and holds the 
+        memory structures for the UM's mapped memory and unmapped IDs. ummem 
+        also implements functionality for all UM instructions involving 
+        memory (map, unmap, seg load, seg store). The UM mem struct is kept 
+        from umartihmetic since umarithmetic instructions do not need to 
+        access the UM's memory.
+    -   umarithmetic implements all UM instructions that do not require memory
+        (loadval, add, multiply, divide, conditional move, input, output_val, 
+        bitwiseNAND). It does not know of either struct Universal_Machine 
+        or UM_memory_structures. It simple alters the array of registers it is
+        passed. 
+
+
+How long is takes for our UM to execute 50 million instructions and how 
+we know: 
+        We ascertained the number of instructions in midmark by printing 
+        the length of our 0 segment after it was made. We then timed 
+        ./um midmark.um and found that our program takes 4.24 seconds to 
+        complete 30110 instructions. 50 million instructions/ 
+        30110 instructions = 1161, 1161 * 4.24 seconds = 4,922.64 seconds 
+        ( = 82 minutes, =  1.367 hours).
+
+
+Unit tests from UMTESTS: 
+halt - 
+    Tests halt instruction. 
+    Creates word with just halt instruction. When run, no output is expected, 
+    the program just stops. Running valgrind with this test ensures all 
+    memory is freed when the the program halts. 
+output_test - 
+    Tests loadval and output. 
+    Creates word with loadval and output 
+    instructions to load a value into r1 and immediatley outputthe value of 
+    that register, one value and register at a time.
+load_val_once - 
+    Tests loadval and output
+    Creates instruction with loadval and output 
+    instructions to load values into r1 and r2 and output the value of r3
+add_output - 
+    Tests add
+    Creates instruction to load values into r1, r2 (5), and r3 (10) and 
+    perform add. Then outputs r1 to ensure it is expected value (15).
+high_add_test - 
+    Tests add with high values 
+    Creates instruction to load values into r2 (254) and r3 (0) at top of 
+    32 bit range. Outputs r1 to ensure it is expected value (254). 
+divide_test - 
+    Tests divide 
+    Creates instruction to load values into r1 (5), r2 (100), and r3 (2) and 
+    then execute divide instruction. Outputs r1 to ensure it is expected value
+    (50). 
+divide_frac_test
+    Tests divide instruction when division would result in a fraction 
+    Creates instruction to load values into r1 (14), r2 (90), and r3 (7) and 
+    then execute divide instruction. Output r1 to ensure it is expected value 
+    (12).
+small_mult_test
+    Test multiplication instruction on small values. 
+    Creates instruction to load values into r1 (0), r2 (10), and r3 (5) and 
+    then execute multiplication instruction. Output r1 to ensure it is expected 
+    value (50).
+big_mult_test
+    Tests multiplication instruction on large values 
+    Creates instruction to load values into r1 (0), r2 (20), r3 (11) and then 
+    execute multiplication instruction. Output r1 to ensure it is expected 
+    value (220).
+big2_mult_test
+    Tests multiplication instruction and division instruction 
+    Creates intruction to load values into r1 (5), r2 (13), r3 (215), and r4
+    (255) and multiply r2 and r3 and store in r1 and divide r1 by r4. Output
+    r1 to ensure it is expected value (10).
+samereg_mult_test
+    Tests multiplication 
+    Creates instruction to load values into r1 (5), multiply by r1(5)and store 
+    back into r1. Output r1 to make sure it is expected value (25).
+
+bitwise_test
+    Tests bitwise and and negation function.
+    Creates instruction to load r1 with 0 then NAND r1 with r1 and store in r3.
+    Then, NAND r3 and r3 and store in r1. Then adds 1 to r1 and outputs r1 to 
+    ensure it is expected value of 1. 
+    
+condmv_0_test
+    Tests conditional move on the case where rc = 0
+    Creates an instruction that loads 0 into r3, 5 into r1, and 7 into r2
+    (conditional move does not occur)
+    Outputs the original register to ensure it is the expected value
+    r1 = 5.
+condmv_small_test
+    Tests conditional move on the non-zero case with small values
+    Creates an instruction to load r1 = 5, r2 = 7, and r3 = 1 and output r1
+    to ensure it is expected value of 7. 
+
+condmv_big_test
+    Tests conditional move on the non-zero case with small values
+    Creates an instruction to load r1 = 126, r2 = 245, and r3 = 89 and output r1
+    to ensure it is expected value of 126.    
+
+input1_test
+    Tests input with a non-EOF character 
+    Creates an instruction stream with input and loads into r1, then outputs r1.
+    Expected input is ! and expected output is !
+
+seg0_test
+    Tests segment load and segment store 
+    Creates instruction to load r1 with 2, r2 with 0, r3 with 0, and r4 with 4,
+    then to store the value in r4 at segment 0 at 0, then to load the value at 
+    0 0 into r1. Then output r1 to ensure it is expected value (4).
+
+reg5_sload_test
+    Tests segment load and map 
+    Creates instruction that loads values r1 = 33, r2 = 0, r3 = 2 and r4 = 4, 
+    then to map a new segment with the value of words in r3, then to perform
+    sam sequence of instrctions as seg0_test in terms of segload and segstore, 
+    but on newly mapped sequence. Output r4 to ensure it is the expected value 
+    (33).
+
+consec_arithmetic
+    Tests multiplication, map segment, loadprogram 0 case, addition, sstore, 
+    sload. 
+    Creates instruction stream to do the following: 
+        Load r1 with 254 and square r1. Then load that value back in r1.
+        Map segment with 254^2 words. 
+        Duplicate segment 0 and store back at segment 0.
+        Output each register 
+        Load 254 in r1 and add with r3
+        sstore m[0][254] in r3
+        sload r2 in m[0][254] 
+        adds 1 to r1 and outputs r1.
+
+loadval_low_high_tester
+    Tests loadval with high values
+    Creates instruction stream to :
+        load r1 with 0 and output
+        load r2 with 33554431 and r3 with 1000000
+        Divide r2 by r3
+        output r1 to ensure it is expected output of 33
+mult_load
+    Tests consecutive loadvals
+    Creates instructions stream that loads back to back values into r3 and then
+    outputs r3 to make sure it has been updated to 78. 
+
+output_0_255
+    Tests end of output ranges 
+    Creates instruction stream that loads r1 with value 0 and then outputs*
+    then loads r1 with value 255 and outputs r1 again.
+    *Because umlabwrite cannot write 0 to a file as ASCII and create a .1 file
+    (reads output as null), we ommitted outputting 0 in submission, but used
+    it for our actual testing. 
+  
+   
+
+map_unmap
+    Tests map segment and unmap segment
+    Creates an instruction stream that loads r1 with 3 and r2 with 4. 
+    Then to map a segment with number of words in r1 and another with 
+    number of words in r2. Then to unmap segment at r1, then to map another 
+    segment with number of words in r1 with ID stored in R1. Output r1 to 
+    ensure that mapped segment ID is expected value.
+    
+           
+        
+Time spent analyzing, preparing design, coding
