@@ -1,0 +1,44 @@
+README for CS40 HW7: Profiling 
+
+
+Georgia Power(gpower02) and Brooke Thompson (bthomp05)
+
+TA Help: Tim
+
+Routine that takes the most time in final UM: 
+    Our main directly contains all code and only calls functions to open and 
+    close files, read and write characters, and free heap allocated memory. 
+    Allocating is the most expensive routine in our program for the map segment 
+    functionality. 
+
+Improvement of assembly code for midmark:
+    About 10 percent of time in our program is spent on callocing for new
+    segments. There isn't any way we can improve this because we do not 
+    calloc in a nested loop within the machine cycle and therefore do not do 
+    unnecessary calculation. Initially, we only calloc enough space to hold 
+    the same number of segments as words in the original loaded program.
+    Looking at the assembly for the map functionality, the only loops are for 
+    reallocating memory in the case that the array holding mapped segments 
+    or mapped segment lengths has been filled. Removing this loop would 
+    improve the assembly, but would cause us to have to allocate excessive 
+    memory at the beginning of the program and may result in a segfault if 
+    the user loads a program larger than our program has allocated for.
+
+    About 8 percent of time in our program is spent freeing. However, only 0.08 
+    percent of the time is spent deallocating memory outside of the unmap 
+    segment functionality. 
+    Looking at the assembly for the unmap functionality, the only loop is for 
+    reallocating memory in the case that the array holding the IDs of unmapped 
+    segments has been filled. Similaryly to the map functionality, 
+    if we removed this reallocation check, we would have to initally calloc
+    excessive memory to run the provided benchmarks and may encounter a 
+    segfault if the user loaded a program larger than our program has allocated
+    for. 
+
+    Therefore, we have concluded that there is no obvious way to improve our 
+    assembly. 
+
+
+Analyzing problems: 3 hours
+
+Preparing solution: 20 hours
