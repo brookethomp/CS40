@@ -1,3 +1,23 @@
+Locality:
+  In this assignment, the focus is on cache and locality, with a dual-track approach. On the design and building track, there 
+  are blocked two-dimensional arrays implemented that create polymorphic image rotation code, emphasizing efficient data structure 
+  design. Simultaneously, on the experimental computer science track, I predicted and measured the costs of image rotations 
+  based on cache knowledge from the course material and lectures. This involves applying theoretical insights into cache behavior 
+  to anticipate performance outcomes and subsequently conducting experiments to validate these predictions. The assignment 
+  aims to provide a comprehensive understanding of cache optimization, array structures, and their impact on image rotation 
+  performance through a combination of practical implementation and theoretical analysis.
+
+Machine Arithmetic (arith): 
+  The primary objective of this assignment is to provide hands-on experience with low-level machine representations of numbers. I developed a program 
+  that compresses PPM images through transformations in color spaces, involving the discard of information not easily discernible by the human eye, 
+  constituting lossy compression. The assignment covers packing and unpacking binary data, dealing with both signed and unsigned integers, 
+  and working with two's-complement representations of signed data. Additionally, I learned to handle in floating-point arithmetic. 
+  The assignment includes writing and testing conversions between RGB and component video color spaces and implementing a discrete cosine 
+  transform. A problem-solving technique called "stepwise refinement" is recommended, where the problem is broken down into parts, 
+  each solved by individual functions or modules. The design emphasizes the composition of solutions to individual parts, promoting 
+  modular reasoning and organized separation of interfaces into separate files in C programming. The overall goal is to deepen 
+  understanding of the capabilities and limitations of machine arithmetic while gaining insights into image compression techniques 
+  and linear algebra applications in the context of broadcast color TV and JPEG image compression.
 
 UM:
   The purpose of this assignment is to implement a software version of a virtual machine, referred to as the "Universal Machine" (UM), 
