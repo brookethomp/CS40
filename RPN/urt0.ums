@@ -1,0 +1,21 @@
+# File urt0.ums contains startup code to allocate space for the call stack 
+# (in the data section) and initialize both the stack pointer and register 
+# 0 (in the init section).
+
+#############callstack##############
+# RPN Calc's call stack representation.
+#
+# Effects:
+#   Creates a space in memory segment zero that is used as a call.
+#   The end of the valuestack is pointed to with r2.
+################################## 
+.section data
+    .space 1000000
+    endstack:
+
+.section init 
+    .temps r6, r7
+    .zero r0
+    r2 := endstack
+    r3 := end_valuestack
+    r0 := 0

@@ -1,0 +1,554 @@
+#File calc40.ums contains calculator-related data structures and functions.    
+                                                                            
+#############valuestack##############                                     
+# Stack that will hold the numerals that the user inputs.                
+#                                                                           
+# Effects:                                                                
+#   Creates a space in memory segment zero that is used as a value stack.  
+#   The end of the valuestack is pointed to with r3.                     
+##################################                                           
+.section data                                                               
+    .space 1000000                                                       
+    end_valuestack:                                                          
+                                                                         
+#############jumptable##############
+# Jump table that is used to "jump" to the necessary labels to execute a given
+# command
+#
+# Effects:
+#   Creates a space in memory segment zero that is used as a jump table.
+################################## 
+.section rodata
+    jumptable:
+        .space 256
+
+.section init 
+        .temps r6, r7
+        r5 := jumptable
+        r2 := endstack
+        r3 := end_valuestack
+
+    #############init_jump##############
+    # Initializes the entire jump table to go to input_error label. Once done, 
+    # it goes to init_variable to set the necessary spaces in the jump table to
+    # their correct label
+    #
+    # Effects:
+    #   Fills jump table with input_error labels
+    ################################## 
+    init_jump:
+        if (r5 == jumptable + 256) goto init_variable using r4
+        m[r0][r5] := input_error
+        r5 := r5 + 1
+        goto init_jump using r4
+
+    #############init_variable##############
+    # Initializes the labels that each spot in the jump table will jump to when
+    # called.
+    #
+    # Effects:
+    #   Jumptable will now hold and jump to the necessary labels when the user 
+    #   inputs a character.
+    ################################## 
+    init_variable:
+        m[r0][jumptable + '0'] := digit
+        m[r0][jumptable + '1'] := digit
+        m[r0][jumptable + '2'] := digit
+        m[r0][jumptable + '3'] := digit
+        m[r0][jumptable + '4'] := digit
+        m[r0][jumptable + '5'] := digit
+        m[r0][jumptable + '6'] := digit
+        m[r0][jumptable + '7'] := digit
+        m[r0][jumptable + '8'] := digit
+        m[r0][jumptable + '9'] := digit
+
+        m[r0][jumptable + ' '] := space
+        m[r0][jumptable + '\n'] := print
+        m[r0][jumptable + '+'] := add
+        m[r0][jumptable + '-'] := sub
+        m[r0][jumptable + '*'] := mul
+        m[r0][jumptable + '/'] := div
+
+        m[r0][jumptable + '|'] := bit_or
+        m[r0][jumptable + '&'] := bit_and
+        m[r0][jumptable + 'c'] := change_sign
+        m[r0][jumptable + '~'] := bit_comp
+        m[r0][jumptable + 's'] := swap
+        m[r0][jumptable + 'd'] := dup
+        m[r0][jumptable + 'p'] := pop_val
+        m[r0][jumptable + 'z'] := empty_stack
+
+
+.section text
+    # return address in r1, which gets result
+    # call stack pointer in r2
+    # value stack pointer in r3
+    # nonvolatiles r0, r3, r4
+    # r0 is zero
+
+    #############main##############
+    # Runs the query loop that will call RPN calculator's functionality.
+    #
+    # Effects:
+    #   Pushes return address and nonvolatiles onto call stack, then goes to 
+    #   waiting label (query loop begins).
+    ################################## 
+    main:
+        push r1 on stack r2 // push return address onto call stack
+        push r3 on stack r2 // push nonvolatile onto call stack
+        push r4 on stack r2 // push nonvolatile onto call stack
+
+        goto waiting
+
+    #############waiting##############
+    # Reads in input.
+    #
+    # Effects:
+    #   "Falls" to waiting_with_character procedure.
+    #   r1 begins to hold the input character which will be used to see what 
+    #   command to execute in the jump table in waiting_with_character
+    ################################## 
+    waiting:
+        r1 := input()
+
+    ######waiting_with_character#######
+    # Uses jumptable to "jump" to the procedure associated with the inputted 
+    # value.
+    #
+    # Effects:
+    #   Checks if the inputted character signals EOF -> goes to end_main if 
+    #   EOF.
+    ################################## 
+    waiting_with_character:
+        if (r1 == -1) goto end_main using r4
+
+        r4 := jumptable + r1
+        r4 := m[r0][r4]
+        goto r4
+        
+    ###############entering################
+    # Takes in a character and calls a function.
+    #
+    # Effects:
+    # 	If register is set to a number, then it goes to a function for fixing 
+    #   a number. If register is set to any other charcter then the machine 
+    #   goes back into waiting state.
+    ##################################  
+    entering:
+        r1 := input()
+
+        if (r1 == '9') goto fix_nums using r5
+        if (r1 == '8') goto fix_nums using r5
+        if (r1 == '7') goto fix_nums using r5
+        if (r1 == '6') goto fix_nums using r5
+        if (r1 == '5') goto fix_nums using r5
+        if (r1 == '4') goto fix_nums using r5
+        if (r1 == '3') goto fix_nums using r5
+        if (r1 == '2') goto fix_nums using r5
+        if (r1 == '1') goto fix_nums using r5
+        if (r1 == '0') goto fix_nums using r5
+
+        goto waiting_with_character
+
+###############fix_nums################
+# Adds the next digit place value in a multiple digit number.
+#
+# Effects:
+# 	Pushes a digit with one more place value on the value stack.
+#   Umasm stays in enetering state.
+##################################  
+    fix_nums:
+        pop r5 off stack r3 // pops previously added value from stack and 
+                            // stores in r5
+
+        r1 := r1 - '0'      // subtracts ascii value 0 from the inputted number
+                            // to get its value
+        r5 := r5 * 10       // multiplies r5 by 10 to increase its significance
+                            // and allow for the new digit to be added
+        r5 := r5 + r1  
+
+        push r5 on stack r3
+        goto entering
+
+    ###########input_error############
+    # Prints error message to let user know that their inputted command is not 
+    # available in RPN Calc.
+    #
+    # Effects:
+    #   Outputs error message.
+    # 	Returns to waiting for the next input.
+    ################################## 
+    input_error:
+        output "Unknown character '"
+        output r1 
+        output "'\n"
+        goto waiting
+    
+    #########underflow_check1##########
+    # Prints error message to let user know that 1 element was necessary for 
+    # the procedure to be carried out.
+    #
+    # Effects:
+    #   Outputs error message.
+    # 	Returns to waiting for the next input.
+    ################################## 
+    underflow_check1:
+        output "Stack underflow---expected at least 1 element\n"
+        goto waiting
+        
+    #########underflow_check2##########
+    # Prints error message to let user know that 2 elements were necessary for 
+    # the procedure to be carried out.
+    #
+    # Effects:
+    #   Outputs error message.
+    # 	Returns to waiting for the next input.
+    ################################## 
+    underflow_check2:
+        output "Stack underflow---expected at least 2 elements\n"
+        goto waiting
+
+    ###############end_main################
+    # Ends RPNCalc.
+    #
+    # Effects:
+    # 	Returns 0 for EXIT_SUCCESS.
+    #   Restores volatile registers.
+    ##################################  
+    end_main:
+        pop r4 off stack r2 // restore volatile register
+        pop r3 off stack r2 // restore volatile register
+        pop r5 off stack r2 // get return address
+        r1 := 0
+        goto r5
+
+    ###############space################
+    # Returns to waiting.
+    #
+    # Effects:
+    # 	Returns to waiting for the next input.
+    ##################################  
+    space:
+        goto waiting
+
+    ###############print################
+    # Prints the entire value stackstack.
+    #
+    # Effects:
+    # 	The entire value stack is printed to standard output.
+    ##################################  
+    print:
+        r4 := end_valuestack - r3 // stores the size of the valuestack in r4
+
+    ###############print_loop################
+    # Helper function for print that prints each element in the value stack in 
+    # stack order.
+    #
+    # Effects:
+    # 	The entire value stack is printed to standard output.
+    ##################################  
+    print_loop: 
+        if (r4 == 0) goto waiting // if we've printed all of the values on the 
+                                  // stack, return to query loop
+
+        r5 := end_valuestack - r4 // gets index of value to print next
+        
+        push m[r0][r5] on stack r2 // push value onto call stack
+        
+        goto print_d linking r1
+        r4 := r4 - 1
+    
+        pop stack r2            
+        output '\n'
+        goto print_loop
+
+    ###############add################
+    # Pops top two values on the value stack and adds them together.
+    #
+    # Effects:
+    # 	Pushes the sum on the top of the value stack
+    #   If not enough elements are on the stack, an error message is printed.
+    ##################################    
+    add:
+        r4 := end_valuestack - r3 // stores the size of the valuestack in r4
+        if (r4 == 0) goto underflow_check2 // if the stack is empty, output 
+                                           // error message
+        if (r4 == 1) goto underflow_check2 using r5 // if the stack only had 1 
+                                                    // element, output error 
+                                                    // message
+        pop r7 off stack r3
+        pop r4 off stack r3
+        r7 := r4 + r7
+        push r7 on stack r3
+        goto waiting
+
+    ###############sub################
+    # Pops the top two elements of the value stack and gets the difference of 
+    # them.
+    # 
+    # Effects:
+    # 	Pushes the difference onto the top of the value stack
+    #   If not enough elements are on the stack, an error message is printed.
+    ##################################
+    sub:
+        r4 := end_valuestack - r3 // stores the size of the valuestack in r4
+        if (r4 == 0) goto underflow_check2 // if the stack is empty, output 
+                                           // error message
+        if (r4 == 1) goto underflow_check2 using r5 // if the stack only had 1 
+                                                    // element, output error 
+                                                    // message
+        pop r7 off stack r3
+        pop r4 off stack r3
+        r7 := r4 - r7
+        push r7 on stack r3
+        goto waiting
+
+    ###############mul################
+    # Pops the top two elements of the value stack and gets the product of the 
+    # them
+    #
+    # Effects:
+    # 	Pushes the product on top
+    #   If not enough elements are on the stack, an error message is printed.
+    ##################################
+    mul:
+        r4 := end_valuestack - r3 // stores the size of the valuestack in r4
+        if (r4 == 0) goto underflow_check2 // if the stack is empty, output 
+                                           // error message
+        if (r4 == 1) goto underflow_check2 using r5 // if the stack only had 1 
+                                                    // element, output error 
+                                                    // message
+        pop r7 off stack r3
+        pop r4 off stack r3
+        r7 := r7 * r4
+        push r7 on stack r3
+        goto waiting
+
+    ###############div################
+    # Divides the second element on the value stack by the top of the value 
+    # stack.
+    #
+    # Effects:
+    # 	Pushes the quotient onto the top of the value stack
+    #   If not enough elements are on the stack, an error message is printed.
+    ##################################
+    div: 
+        r4 := end_valuestack - r3 // stores the size of the valuestack in r4
+        if (r4 == 0) goto underflow_check2 // if the stack is empty, output 
+                                           // error message
+        if (r4 == 1) goto underflow_check2 using r5 // if the stack only had 1 
+                                                    // element, output error 
+                                                    // message
+        pop r5 off stack r3
+        pop r4 off stack r3
+        if (r5 == 0) goto div_by_0 using r1, r6, r7
+        if (r5 <s 0) goto div_neg_r5 using r1, r6, r7
+        if (r4 <s 0) goto div_neg_r4 using r1, r6, r7
+        r5 := r4 / r5
+        push r5 on stack r3
+        goto waiting
+
+    ###############div_neg_r5################
+    # Helper dividing function that takes care of the case divides a positive 
+    # number by a negative number.
+    #   
+    # Effects:
+    # 	Pushes the quotient onto the top of the value stack
+    ##################################
+    div_neg_r5:
+        if (r4 <s 0) goto div_neg_both using r1, r6, r7
+        r5 := r5 * -1
+        r5 := r4 / r5
+        r5 := r5 * -1
+        push r5 on stack r3
+        goto waiting
+
+    ###############div_neg_both################
+    # Helper dividing function that takes care of the case where a 
+    # negative number is divided by a negative number.
+    #
+    # Effects:
+    # 	Pushes the quotient onto the top of the value stack
+    ##################################
+    div_neg_both:
+        r5 := r5 * -1
+        r4 := r4 * -1
+        r5 := r4 / r5
+        push r5 on stack r3
+        goto waiting
+    
+    ###############div_neg_r4################
+    # Helper dividing function that takes care of the case where a negative
+    # number is divided by a positive number.
+    #   
+    # Effects:
+    # 	Pushes the quotient onto the top of the value stack
+    ##################################
+    div_neg_r4:
+        r4 := r4 * -1 
+        r5 := r4 / r5
+        r5 := r5 * -1
+        push r5 on stack r3
+        goto waiting
+
+    ###############div_by_0################
+    # Helper dividing function that takes care of the case where a numbers is 
+    # being divided by a 0.
+    #
+    # Effects:
+    # 	Restores the values stack and prints out an error message.
+    ##################################
+    div_by_0:
+        push r4 on stack r3 // puts both popped values back onto value stack
+        push r5 on stack r3
+        output "Division by zero\n"
+        goto waiting
+
+    ###############bit_or################
+    # 	Bitwise ORs two values popped
+    #   off the value stack.
+    #
+    # Effects:
+    # 	Pushes the value on top of the value stack.
+    #   If not enough elements are on the stack, an error message is printed.
+    ##################################
+    bit_or:
+        r4 := end_valuestack - r3 // stores the size of the valuestack in r4
+        if (r4 == 0) goto underflow_check2 // if the stack is empty, output 
+                                           // error message
+        if (r4 == 1) goto underflow_check2 using r5 // if the stack only had 1 
+                                                    // element, output error 
+                                                    // message
+        pop r7 off stack r3
+        pop r4 off stack r3
+        r7 := r7 | r4
+        push r7 on stack r3
+        goto waiting
+    
+    ###############bit_and################
+    #   Bitwise ands the top two elements of the value stack.
+    #
+    # Effects:
+    # 	Pushes the result of the bitwise and to the top of the value stack.
+    #   If not enough elements are on the stack, an error message is printed.
+    ##################################
+    bit_and:
+        r4 := end_valuestack - r3 // stores the size of the valuestack in r4
+        if (r4 == 0) goto underflow_check2 // if the stack is empty, output 
+                                           // error message
+        if (r4 == 1) goto underflow_check2 using r5 // if the stack only had 1 
+                                                    // element, output error 
+                                                    // message
+        pop r7 off stack r3
+        pop r4 off stack r3
+        r7 := r7 & r4
+        push r7 on stack r3
+        goto waiting
+
+    ###############change_sign################
+    # Pops and changes the sign of the value on top of the value stack.
+    #   
+    # Effects:
+    # Pushes the value with a changed sign on top of the value stack.
+    #   If not enough elements are on the stack, an error message is printed.
+    ##################################
+    change_sign:
+        r4 := end_valuestack - r3 // stores the size of the valuestack in r4
+        if (r4 == 0) goto underflow_check1 // if the stack is empty, output 
+                                           // error message
+        pop r7 off stack r3
+        r7 := r7 * -1 
+        push r7 on stack r3
+        goto waiting
+    
+    ###############bit_comp################
+    # Pops and bitwise complements the sign of the value on top of the value 
+    # stack.
+    #   
+    # Effects:
+    # Pushes the changed value on top of the value stack.
+    ##################################
+    bit_comp:
+        r4 := end_valuestack - r3 // stores the size of the valuestack in r4
+        if (r4 == 0) goto underflow_check1 // if the stack is empty, output 
+                                           // error message
+        pop r7 off stack r3
+        r7 := ~r7
+        push r7 on stack r3
+        goto waiting
+    
+    ###############swap################
+    # Pops and swaps the places of the top two values on the value stack.
+    #   
+    # Effects:
+    # Pushes the two values on the value stack in opposite order.
+    ##################################
+    swap:
+        r4 := end_valuestack - r3 // stores the size of the valuestack in r4
+        if (r4 == 0) goto underflow_check2 // if the stack is empty, output 
+                                           // error message
+        if (r4 == 1) goto underflow_check2 using r5 // if the stack only had 1 
+                                                    // element, output error 
+                                                    // message
+        pop r7 off stack r3
+        pop r4 off stack r3
+        push r7 on stack r3
+        push r4 on stack r3
+        goto waiting
+
+
+    ###############dup################
+    # Pops and duplicates the value on the top of the value stack.
+    #   
+    # Effects:
+    # Pushes the value on the value stack twice.
+    ##################################
+    dup:
+        r4 := end_valuestack - r3 // stores the size of the valuestack in r4
+        if (r4 == 0) goto underflow_check1 // if the stack is empty, output 
+                                           // error message
+        pop r7 off stack r3
+        push r7 on stack r3
+        push r7 on stack r3
+        goto waiting
+
+    ###############pop_val################
+    # Pops the top value off the value stack.
+    #   
+    # Effects:
+    # Value stack has the top vaue popped off.
+    ##################################
+    pop_val:
+        r4 := end_valuestack - r3 // stores the size of the valuestack in r4
+        if (r4 == 0) goto underflow_check1 // if the stack is empty, output 
+                                           // error message
+
+        pop stack r3
+        goto waiting
+
+    ###############empty_stack################
+    # Pops values off the value stack until it is empty.
+    #   
+    # Effects:
+    #     Value stack is emptied.
+    ##################################
+    empty_stack:
+        if (r3 == end_valuestack) goto waiting using r5 // checks if we've 
+                                                        // popped all the 
+                                                        // values off of the 
+                                                        // value stack
+        pop stack r3
+        goto empty_stack
+
+    ###############digit################
+    # Pushes value onto value stack.
+    #   
+    # Effects:
+    #   Value stack gains a value on top.
+    #   Umasm goes into entering state.
+    ##################################
+    digit:
+        r1 := r1 - '0' // subtracts the ascii value of 0 from the inputted 
+                       // digit to store its value on the vall stack.
+        push r1 on stack r3
+        goto entering

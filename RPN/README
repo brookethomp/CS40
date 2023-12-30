@@ -1,0 +1,57 @@
+Names:
+    
+    Brooke Thompson bthomp05
+    Kathrine Quintanilla kquint02
+
+Acknowledgements:
+
+        TAs! Especially Isaiah!
+
+Correctly implemented:
+
+        Everything is correctly implemented.
+
+Explains any departures from the recommended calling convention:
+
+        r3 is a value stack, everything else is the same as the recommended 
+        calling convention.
+
+Implementing the print module:
+
+        Our print module takes in a number and runs through a recursive loop 
+        that has a base case of a single digit, otherwise it will proceed to 
+        mod the number by 10 and add the single digit to our value stack, 
+        then it takes the original number and subtracts the last digit 
+        and divides by ten to move onto to the next digit place, then it 
+        repeats this until it reaches the base case where it prints the 
+        first digit and then pops off the stack each following integer.
+
+Representing the RPN calculator’s value stack:
+
+        The value stack is a separate stack that holds the values of numbers 
+        when they are entered.
+
+Sections
+
+    .text section 
+        
+        Holds procedure definitions (such as the arithmetic functionality 
+        of the RPN calc), as well as the definition of main.
+
+    .data section 
+        
+        Holds a preallocated value stack and a preallocated call stack.
+
+    .init section 
+        
+        Initializes our registers, jump table and stack and then calls main.
+
+    .rodata Section 
+
+        Contains our jump table.
+
+Hours spent analyzing the assignment: 2
+
+Hours spent writing assembly code: 8
+
+Hours spent debugging your calculator: 6

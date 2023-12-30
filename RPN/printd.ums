@@ -1,0 +1,132 @@
+#  File printd.ums contains a function for printing Universal Machine 
+#  words in decimal.
+
+.section intit
+    .zero r0
+    .temps r6, r7
+
+.section text
+    # return address in r1, which gets result
+    # call stack pointer in r2
+    # value stack pointer in r3
+    # nonvolatiles r0, r3, r4
+    # r0 is zero
+
+    #############print_d##############
+    # Pushes return address and nonvolatiles onto call stack and runs the query
+    # loop to print a multi-digit numeral to output.
+    #
+    # Effects:
+    #   Pushes return address and nonvolatiles onto call stack, then goes to 
+    #   printing loop.
+    ################################## 
+    print_d:
+        push r1 on stack r2 // push return address onto call stack
+        push r3 on stack r2 // push nonvolatile onto call stack
+        push r4 on stack r2 // push nonvolatile onto call stack
+
+
+        r4 := m[r0][r2 + 3] // gets the argument pushed onto the call stack 
+                            // before entering print_d, which is the number to 
+                            // be printed
+                            
+        r1 := 0
+
+        output ">>> "
+
+        r7 := 0x80000000 // stores most negative number in a register to check 
+                         // for special case
+       
+        if (r4 == r7) goto print_most_neg using r5
+        if (r4 == 0) goto print_zero
+        if (r4 <s 0) goto print_negative using r5
+
+
+        goto print_positive
+    
+    ############base_case#############
+    # Base case for the recursive print function that then pops each pushed on 
+    # value onto the value stack and outputs it.
+    #
+    # Effects:
+    #   Outputs the top value of the value stack (which is the most significant
+    #   value of the original multi-digit number) and then recurses on 
+    #   itself to print the rest of the digits.
+    ################################## 
+    base_case:
+        if (r4 == 0) goto print_zero
+        if (r1 == 0) goto print_end
+
+        pop r4 off stack r3
+        r4 := r4 + '0'
+        output r4
+        r1 := r1 - 1
+        goto base_case
+
+    ###########print_zero############
+    # Prints the "0".
+    #
+    # Effects:
+    #   Outputs "0" then goes to print_end.
+    ##################################
+    print_zero:
+        output "0"
+        goto print_end
+
+    ##########print_negative##########
+    # Prints a negative sign and then converts the negative number to positive 
+    # so that the print_positive function can print the rest of the number.
+    #
+    # Effects:
+    #   Outputs "-" and converts the negative number to a positive number.
+    ##################################
+    print_negative:
+        r4 := r4 * -1
+        output "-"
+        goto print_positive
+
+    ##########print_positive##########
+    # Recursively pushes the least significant number of a multi-digit number 
+    # to the value stack until the base case is reached.
+    #
+    # Effects:
+    #   Pushes a large number onto the stack one digit at a time so that it can
+    #   be printed.
+    ##################################
+    print_positive:
+        push r4 on stack r3 
+        r1 := r1 + 1
+        if (r4 <=s 9) goto base_case using r5
+        pop stack r3
+
+        r5 := r4 mod 10
+        push r5 on stack r3
+
+        r4 := r4 - r5
+        r4 := r4 / 10
+
+        goto print_positive
+
+    #############print_most_neg##############
+    # Outputs the most negative number as a special case.
+    #
+    # Effects:
+    #   Outputs the most negative number
+    ################################## 
+    print_most_neg:
+        output "-2147483648"
+        goto print_end
+
+    #############waiting##############
+    # Resets registers and pops two registers off call satck
+    #
+    # Effects:
+    #   Restores r4 value and sets r1 to 0 to signal success, then uses r5 to 
+    #   returns.
+    ################################## 
+    print_end: 
+        r1 := 0
+        pop r4 off stack r2 // restores nonvolatile
+        pop r3 off stack r2 // restores nonvolatile
+        pop r5 off stack r2 // grabs return address
+        goto r5
